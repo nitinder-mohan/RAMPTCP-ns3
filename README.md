@@ -1,26 +1,3 @@
-RAMPTCP-ns3
-
-Please follow the guide to run RAMPTCP code in NS3. 
-
-########################################
-######## REQUIREMENTS ##################
-########################################
-
-
-
-########################################
-######## INSTRUCTIONS ##################
-########################################
-
-Step 1: 
- 
-Step 2:
-
-
-
-
-
-
 # Receiver Assitted MPTCP (RAMPTCP) - NS3
 
 This repository is for the ns3 evaluation and implementation of Receiver-Assitted MPTCP. You can also follow the repo if you want to simulate MPTCP principle in NS3 in general
