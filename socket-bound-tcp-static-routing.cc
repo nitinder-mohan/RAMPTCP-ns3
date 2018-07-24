@@ -665,7 +665,7 @@ main(int argc, char *argv[]) {
 
     ////******Choose topology for simulation. Choose only one of three******////
     bool wifi_wifi = true; //Both Wifi interfaces
-    bool wifi_lte = false;
+    //bool wifi_lte = false;
     //    bool wifi_rxbufferbloat = true;
 
     CommandLine cmd;
@@ -751,12 +751,11 @@ main(int argc, char *argv[]) {
         NodeContainer ap1WifiNode = NodeContainer(nRtr2nRtr4.Get(0)); //nRtr1 from P2P link
         
         //DST side WiFi links 
-        NodeContainer staWifiNode = NodeContainer(nSrc); //nSRC from P2p link
-        NodeContainer apWifiNode = NodeContainer(nRtr1nRtr3.Get(0)); //nRtr1 from P2P link
+        NodeContainer dstWifiNode = NodeContainer(nDst); //nSRC from P2p link
+        NodeContainer apDstWifiNode = NodeContainer(nRtr1nRtr3.Get(1)); //nRtr1 from P2P link
 
-        NodeContainer sta1WifiNode = NodeContainer(nSrc); //nSRC from P2p link
-        NodeContainer ap1WifiNode = NodeContainer(nRtr2nRtr4.Get(0)); //nRtr1 from P2P link
-        
+        NodeContainer dst1WifiNode = NodeContainer(nDst); //nSRC from P2p link
+        NodeContainer ap1DstWifiNode = NodeContainer(nRtr2nRtr4.Get(1)); //nRtr1 from P2P link
         
         //Create channel for wifi connection
         channel = YansWifiChannelHelper::Default();
@@ -768,7 +767,9 @@ main(int argc, char *argv[]) {
 
         NqosWifiMacHelper wifiMac;
         //wifiHelper.SetStandard(WIFI_PHY_STANDARD_80211n_2_4GHZ);
-
+        
+        // Src WiFi set up
+        
         phy.Set("ChannelNumber", UintegerValue(1));
         phy.SetChannel(channel.Create());
 
@@ -788,7 +789,7 @@ main(int argc, char *argv[]) {
         //        phy.Set ("RxNoiseFigure", DoubleValue (40));
         //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
         
-        wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate6Mbps"));
+        wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
 
         Ssid ssid1 = Ssid("network1");
         wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
@@ -797,21 +798,54 @@ main(int argc, char *argv[]) {
         wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
         NetDeviceContainer apRtr2 = wifiHelper.Install(phy, wifiMac, ap1WifiNode);
 
-        // We create the Point to point channels first without any IP addressing information
+        // Dst WiFi setup
+        
+        phy.Set("ChannelNumber", UintegerValue(4));
+        phy.SetChannel(channel.Create());
+
+        //        phy.Set ("RxNoiseFigure", DoubleValue (10));
+        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
+
+        Ssid ssid = Ssid("DstNetwork");
+        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
+        NetDeviceContainer dDstdRtr3 = wifiHelper.Install(phy, wifiMac, dstWifiNode);
+
+        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
+        NetDeviceContainer apRtr3 = wifiHelper.Install(phy, wifiMac, apDstWifiNode);
+
+        phy.Set("ChannelNumber", UintegerValue(8));
+        phy.SetChannel(channel.Create());
+
+        //        phy.Set ("RxNoiseFigure", DoubleValue (40));
+        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
+        
+        wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
+
+        Ssid ssid1 = Ssid("network1");
+        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
+        NetDeviceContainer dDstdRtr4 = wifiHelper.Install(phy, wifiMac, dst1WifiNode);
+
+        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
+        NetDeviceContainer apRtr4 = wifiHelper.Install(phy, wifiMac, ap1DstWifiNode);
+
+        
+        // We create the Point to point channels for connecting the two routers
         //        p2p.SetDeviceAttribute("DataRate", StringValue("6Mbps")); // the wire transmission rate must be slower than application data rate for queueing to occur in QueueDisc
-        p2p.SetChannelAttribute("Delay", StringValue("2ms")); //Play with delays on both paths to throw off srtt scheduler
+        p2p.SetChannelAttribute("Delay", StringValue("1ms")); //Play with delays on both paths to throw off srtt scheduler
         //dSrcdRtr2 = p2p.Install(nSrcnRtr2);
 
-        p2p.SetDeviceAttribute("DataRate", StringValue("30Mbps")); //Backbone link (30)
-        dRtr1dDstRtr = p2p.Install(nRtr1nDstRtr);
-        dRtr2dDstRtr = p2p.Install(nRtr2nDstRtr);
+        p2p.SetDeviceAttribute("DataRate", StringValue("100Mbps")); //Backbone link (30)
+        dRtr1dRtr3 = p2p.Install(nRtr1nRtr3);
+        dRtr2dRtr4 = p2p.Install(nRtr2nRtr4);
 
-        p2p.SetDeviceAttribute("DataRate", StringValue("50Mbps")); //Core network link (50)
-        dDstRtrdDst = p2p.Install(nDstRtrnDst);
+//        p2p.SetDeviceAttribute("DataRate", StringValue("50Mbps")); //Core network link (50)
+//        dDstRtrdDst = p2p.Install(nDstRtrnDst);
 
         SrcToRtr1 = dSrcdRtr1.Get(0);
         SrcToRtr2 = dSrcdRtr2.Get(0);
 
+        DstToRtr3 = dDstdRtr3.Get(0);
+        DstToRtr4 = dDstdRtr4.Get(0);
 
         //******Uncomment this code to introduce errors on paths****// 
 //        int random_seed = rand() % 5 + 1;
@@ -889,135 +923,7 @@ main(int argc, char *argv[]) {
         iRtr2Wifi = ipv4.Assign(apRtr2);
     }
 
-    if (wifi_lte == true) {
-        // Point-to-point links
-        nSrcnRtr1 = NodeContainer(nSrc, nRtr1);
-        nSrcnRtr2 = NodeContainer(nSrc, nRtr2);
-        nRtr1nDstRtr = NodeContainer(nRtr1, nDstRtr);
-        nRtr2nDstRtr = NodeContainer(nRtr2, nDstRtr);
-        nDstRtrnDst = NodeContainer(nDstRtr, nDst);
-
-        //Wifi Links
-        NodeContainer staWifiNode = NodeContainer(nSrc); //nSRC from P2p link
-        NodeContainer apWifiNode = NodeContainer(nRtr1nDstRtr.Get(0)); //nRtr1 from P2P link
-
-        NodeContainer sta1WifiNode = NodeContainer(nSrc); //nSRC from P2p link
-        NodeContainer ap1WifiNode = NodeContainer(nRtr2nDstRtr.Get(0)); //nRtr1 from P2P link
-
-        //Create channel for wifi connection
-        channel = YansWifiChannelHelper::Default();
-        phy = YansWifiPhyHelper::Default();
-        //phy.SetChannel(channel.Create());
-
-        WifiHelper wifiHelper;
-        wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate6Mbps"));
-
-        NqosWifiMacHelper wifiMac;
-        //wifiHelper.SetStandard(WIFI_PHY_STANDARD_80211n_2_4GHZ);
-
-        phy.Set("ChannelNumber", UintegerValue(1));
-        phy.SetChannel(channel.Create());
-
-        //        phy.Set ("RxNoiseFigure", DoubleValue (10));
-        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
-
-        Ssid ssid = Ssid("network");
-        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
-        NetDeviceContainer dSrcdRtr1 = wifiHelper.Install(phy, wifiMac, staWifiNode);
-
-        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
-        NetDeviceContainer apRtr1 = wifiHelper.Install(phy, wifiMac, apWifiNode);
-
-        phy.Set("ChannelNumber", UintegerValue(11));
-        phy.SetChannel(channel.Create());
-
-        //        phy.Set ("RxNoiseFigure", DoubleValue (40));
-        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
-
-        Ssid ssid1 = Ssid("network1");
-        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
-        NetDeviceContainer dSrcdRtr2 = wifiHelper.Install(phy, wifiMac, sta1WifiNode);
-
-        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
-        NetDeviceContainer apRtr2 = wifiHelper.Install(phy, wifiMac, ap1WifiNode);
-
-        // We create the Point to point channels first without any IP addressing information
-        //        p2p.SetDeviceAttribute("DataRate", StringValue("6Mbps")); // the wire transmission rate must be slower than application data rate for queueing to occur in QueueDisc
-        p2p.SetChannelAttribute("Delay", StringValue("2ms")); //Play with delays on both paths to throw off srtt scheduler
-        //dSrcdRtr2 = p2p.Install(nSrcnRtr2);
-
-        p2p.SetDeviceAttribute("DataRate", StringValue("30Mbps")); //Backbone link (30)
-        dRtr1dDstRtr = p2p.Install(nRtr1nDstRtr);
-        dRtr2dDstRtr = p2p.Install(nRtr2nDstRtr);
-
-        p2p.SetDeviceAttribute("DataRate", StringValue("50Mbps")); //Core network link (50)
-        dDstRtrdDst = p2p.Install(nDstRtrnDst);
-
-        SrcToRtr1 = dSrcdRtr1.Get(0);
-        SrcToRtr2 = dSrcdRtr2.Get(0);
-
-
-        //******Uncomment this code to introduce errors on paths****// 
-        //        //Adding errors on RTR1
-        //        Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
-        //        em->SetAttribute ("ErrorRate", DoubleValue (0.00001));
-        //        dRtr1dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
-        //
-        //        //Adding errors on RTR2
-        //        Ptr<RateErrorModel> em1 = CreateObject<RateErrorModel> ();
-        //        em->SetAttribute ("ErrorRate", DoubleValue (0.00003));
-        //        dRtr2dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
-        //***Error inducing code is over***//
-
-        //Set up wifi mobility
-        MobilityHelper mobility;
-        mobility.SetPositionAllocator("ns3::GridPositionAllocator",
-                "MinX", DoubleValue(0.0),
-                "MinY", DoubleValue(0.0),
-                "DeltaX", DoubleValue(5.0),
-                "DeltaY", DoubleValue(10.0),
-                "GridWidth", UintegerValue(3),
-                "LayoutType", StringValue("RowFirst"));
-
-        mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-        mobility.Install(staWifiNode);
-        mobility.Install(apWifiNode);
-
-        mobility.Install(sta1WifiNode);
-        mobility.Install(ap1WifiNode);
-
-        Ptr<WifiNetDevice> wifiSrcToRTR1 = DynamicCast<WifiNetDevice> (SrcToRtr1); //Look into WifiMacQueue if you are using Wifi
-        PointerValue ptr;
-        wifiSrcToRTR1->GetAttribute("Mac", ptr);
-        Ptr<StaWifiMac> mac = ptr.Get<StaWifiMac>();
-        mac->GetAttribute("DcaTxop", ptr);
-        Ptr<DcaTxop> dca = ptr.Get<DcaTxop>();
-        Ptr<WifiMacQueue> qSrcToRTR1 = dca->GetQueue();
-        qSrcToRTR1->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueRTR1));
-
-        Ptr<WifiNetDevice> wifiSrcToRTR2 = DynamicCast<WifiNetDevice> (SrcToRtr2); //Look into WifiMacQueue if you are using Wifi
-        PointerValue ptr1;
-        wifiSrcToRTR2->GetAttribute("Mac", ptr1);
-        Ptr<StaWifiMac> mac1 = ptr1.Get<StaWifiMac>();
-        mac1->GetAttribute("DcaTxop", ptr1);
-        Ptr<DcaTxop> dca1 = ptr1.Get<DcaTxop>();
-        Ptr<WifiMacQueue> qSrcToRTR2 = dca1->GetQueue();
-        qSrcToRTR2->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueRTR2));
-
-        // Later, we add IP addresses.
-        ipv4.SetBase("10.1.1.0", "255.255.255.0");
-        Ipv4InterfaceContainer iSrcWifi;
-        iSrcWifi = ipv4.Assign(dSrcdRtr1);
-        Ipv4InterfaceContainer iRtr1Wifi;
-        iRtr1Wifi = ipv4.Assign(apRtr1);
-
-        ipv4.SetBase("10.1.2.0", "255.255.255.0");
-        Ipv4InterfaceContainer iSrcWifi1;
-        iSrcWifi1 = ipv4.Assign(dSrcdRtr2);
-        Ipv4InterfaceContainer iRtr2Wifi;
-        iRtr2Wifi = ipv4.Assign(apRtr2);
-    }
-
+    
     //    if(wifi_rxbufferbloat == true)
     //    {
     //            // Point-to-point links
