@@ -757,6 +757,10 @@ main(int argc, char *argv[]) {
         NodeContainer dst1WifiNode = NodeContainer(nDst); //nSRC from P2p link
         NodeContainer ap1DstWifiNode = NodeContainer(nRtr2nRtr4.Get(1)); //nRtr1 from P2P link
         
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+        /////  SET WIFI CHANNELS /////
+        //!!!!!!!!!!!!!!!!!!!!!!!!!///
+        
         //Create channel for wifi connection
         channel = YansWifiChannelHelper::Default();
         phy = YansWifiPhyHelper::Default();
@@ -828,6 +832,9 @@ main(int argc, char *argv[]) {
         wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
         NetDeviceContainer apRtr4 = wifiHelper.Install(phy, wifiMac, ap1DstWifiNode);
 
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+        /////  SET P2P RTR Links  /////
+        //!!!!!!!!!!!!!!!!!!!!!!!!!///
         
         // We create the Point to point channels for connecting the two routers
         //        p2p.SetDeviceAttribute("DataRate", StringValue("6Mbps")); // the wire transmission rate must be slower than application data rate for queueing to occur in QueueDisc
@@ -837,10 +844,11 @@ main(int argc, char *argv[]) {
         p2p.SetDeviceAttribute("DataRate", StringValue("100Mbps")); //Backbone link (30)
         dRtr1dRtr3 = p2p.Install(nRtr1nRtr3);
         dRtr2dRtr4 = p2p.Install(nRtr2nRtr4);
-
-//        p2p.SetDeviceAttribute("DataRate", StringValue("50Mbps")); //Core network link (50)
-//        dDstRtrdDst = p2p.Install(nDstRtrnDst);
-
+        
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+        /////  GET NODE PTRS for WIFI   /////
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!///
+        
         SrcToRtr1 = dSrcdRtr1.Get(0);
         SrcToRtr2 = dSrcdRtr2.Get(0);
 
@@ -863,7 +871,10 @@ main(int argc, char *argv[]) {
 //                dRtr2dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em1));
         //***Error inducing code is over***//
 
-        //Set up wifi mobility
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+        /////  SET WIFI MOBILITY   /////
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!///
+        
         MobilityHelper mobility;
         mobility.SetPositionAllocator("ns3::GridPositionAllocator",
                 "MinX", DoubleValue(0.0),
@@ -880,6 +891,18 @@ main(int argc, char *argv[]) {
         mobility.Install(sta1WifiNode);
         mobility.Install(ap1WifiNode);
 
+        mobility.Install(dstWifiNode);
+        mobility.Install(apDstWifiNode);
+
+        mobility.Install(dst1WifiNode);
+        mobility.Install(ap1DstWifiNode);
+        
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+        /////  SET WIFI QUEUES   /////
+        //!!!!!!!!!!!!!!!!!!!!!!!!!///
+        
+        // Set WiFi Queues at source //
+        
         Ptr<WifiNetDevice> wifiSrcToRTR1 = DynamicCast<WifiNetDevice> (SrcToRtr1); //Look into WifiMacQueue if you are using Wifi
         PointerValue ptr;
         wifiSrcToRTR1->GetAttribute("Mac", ptr);
@@ -909,6 +932,30 @@ main(int argc, char *argv[]) {
         qSrcToRTR2->TraceConnectWithoutContext("Dequeue", MakeCallback(&DequeueTracer2));
         qSrcToRTR2->TraceConnectWithoutContext("Enqueue", MakeCallback(&EnqueueTracer2));
 
+        //Set WiFi queues at Dest
+        
+        Ptr<WifiNetDevice> wifiDstToRTR3 = DynamicCast<WifiNetDevice> (DstToRtr3); //Look into WifiMacQueue if you are using Wifi
+        PointerValue ptr2;
+        wifiDstToRTR3->GetAttribute("Mac", ptr2);
+        Ptr<StaWifiMac> mac2 = ptr2.Get<StaWifiMac>();
+        mac2->GetAttribute("DcaTxop", ptr2);
+        Ptr<DcaTxop> dca2 = ptr2.Get<DcaTxop>();
+        Ptr<WifiMacQueue> qDstToRTR3 = dca2->GetQueue();
+        qDstToRTR3->SetMaxPackets(1000);
+        
+        Ptr<WifiNetDevice> wifiDstToRTR4 = DynamicCast<WifiNetDevice> (DstToRtr4); //Look into WifiMacQueue if you are using Wifi
+        PointerValue ptr3;
+        wifiDstToRTR4->GetAttribute("Mac", ptr3);
+        Ptr<StaWifiMac> mac3 = ptr3.Get<StaWifiMac>();
+        mac3->GetAttribute("DcaTxop", ptr3);
+        Ptr<DcaTxop> dca3 = ptr3.Get<DcaTxop>();
+        Ptr<WifiMacQueue> qDstToRTR4 = dca3->GetQueue();
+        qDstToRTR4->SetMaxPackets(1000);
+        
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+        /////  SET IP ADDRESSES   /////
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!///
+        
         // Later, we add IP addresses.
         ipv4.SetBase("10.1.1.0", "255.255.255.0");
         Ipv4InterfaceContainer iSrcWifi;
