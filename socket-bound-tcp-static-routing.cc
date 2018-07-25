@@ -452,7 +452,7 @@ public:
     MyApp();
     virtual ~MyApp();
 
-    void Setup(Ptr<Socket> socket1, Ptr<Socket> socket2, Ipv4Address address, uint16_t port, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);
+    void Setup(Ptr<Socket> socket1, Ptr<Socket> socket2, Ipv4Address address, Ipv4Address address1, uint16_t port, uint16_t port1, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);
     void ChangeRate(DataRate newrate);
 
 private:
@@ -465,7 +465,9 @@ private:
     Ptr<Socket> m_socket1;
     Ptr<Socket> m_socket2;
     Ipv4Address m_server;
+    Ipv4Address m_server1;
     uint16_t m_servPort;
+    uint16_t m_servPort1;
     uint32_t m_packetSize;
     uint32_t m_nPackets;
     DataRate m_dataRate;
@@ -482,7 +484,9 @@ MyApp::MyApp()
 : m_socket1(0),
 m_socket2(0),
 m_server(),
+m_server1(),
 m_servPort(0),
+m_servPort1(0),
 m_packetSize(0),
 m_nPackets(0),
 m_dataRate(0),
@@ -501,11 +505,13 @@ MyApp::~MyApp() {
 }
 
 void
-MyApp::Setup(Ptr<Socket> socket1, Ptr<Socket> socket2, Ipv4Address address, uint16_t port, uint32_t packetSize, uint32_t nPackets, DataRate dataRate) {
+MyApp::Setup(Ptr<Socket> socket1, Ptr<Socket> socket2, Ipv4Address address, Ipv4Address address1, uint16_t port, uint16_t port1, uint32_t packetSize, uint32_t nPackets, DataRate dataRate) {
     m_socket1 = socket1;
     m_socket2 = socket2;
     m_server = address;
+    m_server1 = address1;
     m_servPort = port;
+    m_servPort1 = port1;
     m_packetSize = packetSize;
     m_nPackets = nPackets;
     m_dataRate = dataRate;
@@ -522,7 +528,7 @@ MyApp::StartApplication(void) {
     m_socket1->Connect(InetSocketAddress(m_server, m_servPort));
 
     m_socket2->Bind();
-    m_socket2->Connect(InetSocketAddress(m_server, m_servPort));
+    m_socket2->Connect(InetSocketAddress(m_server1, m_servPort1));
 
     SendPacket();
     //StopApplication();
@@ -555,68 +561,70 @@ MyApp::SendPacket(void) {
     //Ptr<Packet> packet = Create<Packet> ((uint8_t*) msg.str().c_str(), m_packetSize);
     Ptr<Packet> packet = Create<Packet> (m_packetSize);
 
-    //m_socket1->Send(packet);
-    m_socket2->Send(packet);
-//    if (((int) Simulator::Now().GetSeconds() > 1)) {
-//        if ((cwndAvailable1 == true && cwndAvailable2 == true)) //|| (cwndAvailable1 == false && cwndAvailable2 == false)) //if both subflows are available; use scheduler to decide which flow/txbuffer to send data
-//        {
-//            ///===== SRTT-based scheduler=======////
-//            //                   if (SRttSocket1 <= SRttSocket2) {
-//            //                        m_socket1->Send(packet);
-//            //                        m_packetSentOn = 1;
-//            //                        m_packetsFlow1++;
-//            //                   } else {
-//            //                      m_socket2->Send(packet);
-//            //                      m_packetSentOn = 2;
-//            //                      m_packetsFlow2++;
-//            //                  }
-//            ///====== Scheduler over ==========//////
-//            //
-//            //        ///===== Queue-based scheduler=======////
-//            if (estServiceRTR1 <= estServiceRTR2) {
-//                m_socket1->Send(packet);
-//                m_packetSentOn = 1;
-//                m_packetsFlow1++;
-//            } else {
-//                m_socket2->Send(packet);
-//                m_packetSentOn = 2;
-//                m_packetsFlow2++;
-//            }
-//            //        ///====== Scheduler over ==========//////
-//            m_packetSent = true;
-//        } else if (cwndAvailable1 == true && cwndAvailable2 == false) {
-//            m_socket1->Send(packet);
-//            m_packetSent = true;
-//            m_packetSentOn = 1;
-//            m_packetsFlow1++;
-//        } else if (cwndAvailable1 == false && cwndAvailable2 == true) {
-//            m_socket2->Send(packet);
-//            m_packetSent = true;
-//            m_packetSentOn = 2;
-//            m_packetsFlow2++;
-//        }
-//
-//        //            if(((int)Simulator::Now().GetSeconds() > 1) && (cwndAvailable2 == true)){
-//        ////                filepacketsent<<Simulator::Now().GetSeconds()<< "\t" << m_packetsSent << std::endl;
-//        //                m_socket2->Send(packet);
-//        //                m_packetSentOn = 2;
-//        //                m_packetSent = true; 
-//        //            }
-//
-//        if (m_packetSent == true) {
-//            ++m_packetsSent;
-//            if (m_packetSentOn == 1) {
-//                filepacketsent1 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow1 << "\t" << m_packetsSent << std::endl;
-//            } else {
-//                filepacketsent2 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow2 << "\t" << m_packetsSent << std::endl;
-//            }
-//        }
-//        //**Constant data flow part**//
-//    }
+    //    if (m_packetsSent%2 == 0)
+    //        m_socket1->Send(packet);
+    //    else
+    //        m_socket2->Send(packet);
 
-    if (++m_packetsSent < m_nPackets) {    //**Comment this check if you need to have constant flow of data**//
-    Simulator::ScheduleNow(&MyApp::ScheduleTx, this);
+    if ((cwndAvailable1 == true && cwndAvailable2 == true)) //|| (cwndAvailable1 == false && cwndAvailable2 == false)) //if both subflows are available; use scheduler to decide which flow/txbuffer to send data
+    {
+        ///===== SRTT-based scheduler=======////
+        if (SRttSocket1 <= SRttSocket2) {
+            m_socket1->Send(packet);
+            m_packetSentOn = 1;
+            m_packetsFlow1++;
+        } else {
+            m_socket2->Send(packet);
+            m_packetSentOn = 2;
+            m_packetsFlow2++;
+        }
+        ////====== Scheduler over ==========//////
+        //
+        //        ///===== Queue-based scheduler=======////
+        //            if (estServiceRTR1 <= estServiceRTR2) {
+        //                m_socket1->Send(packet);
+        //                m_packetSentOn = 1;
+        //                m_packetsFlow1++;
+        //            } else {
+        //                m_socket2->Send(packet);
+        //                m_packetSentOn = 2;
+        //                m_packetsFlow2++;
+        //            }
+        //        ///====== Scheduler over ==========//////
+        m_packetSent = true;
+    } else if (cwndAvailable1 == true && cwndAvailable2 == false) {
+        m_socket1->Send(packet);
+        m_packetSent = true;
+        m_packetSentOn = 1;
+        m_packetsFlow1++;
+    } else if (cwndAvailable1 == false && cwndAvailable2 == true) {
+        m_socket2->Send(packet);
+        m_packetSent = true;
+        m_packetSentOn = 2;
+        m_packetsFlow2++;
     }
+
+    //            if(((int)Simulator::Now().GetSeconds() > 1) && (cwndAvailable2 == true)){
+    ////                filepacketsent<<Simulator::Now().GetSeconds()<< "\t" << m_packetsSent << std::endl;
+    //                m_socket2->Send(packet);
+    //                m_packetSentOn = 2;
+    //                m_packetSent = true; 
+    //            }
+
+    if (m_packetSent == true) {
+        ++m_packetsSent;
+        if (m_packetSentOn == 1) {
+            filepacketsent1 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow1 << "\t" << m_packetsSent << std::endl;
+        } else {
+            filepacketsent2 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow2 << "\t" << m_packetsSent << std::endl;
+        }
+    }
+    //**Constant data flow part**//
+//}
+
+if (m_packetsSent < m_nPackets) { //**Comment this check if you need to have constant flow of data**//
+    Simulator::ScheduleNow(&MyApp::ScheduleTx, this);
+}
 }
 
 void
@@ -1252,16 +1260,23 @@ main(int argc, char *argv[]) {
     //    Socket2->TraceConnectWithoutContext("CongestionWindow", MakeCallback (&CwndTracer2));
 
     uint16_t dstport = 12345;
-    Ipv4Address dstaddr("10.2.2.1");
+    uint16_t dstport1 = 12435;
+    Ipv4Address dstaddr("10.2.1.1");
+    Ipv4Address dstaddr1("10.2.2.1");
 
     PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), dstport));
     ApplicationContainer apps = sink.Install(nDst);
     apps.Start(Seconds(0.0));
     apps.Stop(Seconds(10.0));
+    
+    PacketSinkHelper sink1("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), dstport1));
+    ApplicationContainer apps1 = sink1.Install(nDst);
+    apps1.Start(Seconds(0.0));
+    apps1.Stop(Seconds(10.0));
 
     // Create TCP application at n0
     Ptr<MyApp> app = CreateObject<MyApp> ();
-    app->Setup(Socket1, Socket2, dstaddr, dstport, packetSize, 20, DataRate("18Mbps")); //original packet length: 1020
+    app->Setup(Socket1, Socket2, dstaddr, dstaddr1, dstport, dstport1, packetSize, 20000, DataRate("18Mbps")); //original packet length: 1020
     c.Get(0)->AddApplication(app);
     app->SetStartTime(Seconds(1.0));
     app->SetStopTime(Seconds(10.0));
@@ -1281,8 +1296,8 @@ main(int argc, char *argv[]) {
 
     phy.EnableAsciiAll(ascii.CreateFileStream("wifi-trace.tr"));
 
-    phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-    phy.EnablePcapAll("socket-bound-tcp-static-routing-wifi");
+//    phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
+//    phy.EnablePcapAll("socket-bound-tcp-static-routing-wifi");
 
     LogComponentEnableAll(LOG_PREFIX_TIME);
     LogComponentEnable("SocketBoundTcpRoutingExample", LOG_LEVEL_INFO);
