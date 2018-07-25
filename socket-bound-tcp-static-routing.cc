@@ -161,6 +161,7 @@ std::ofstream filedequeue("Dequeue.txt", std::ios::app);
 std::ofstream filewait("SendTimeFromAck.txt", std::ios::app);
 std::ofstream filepacketsent1("packetsent_flow1.txt", std::ios::app);
 std::ofstream filepacketsent2("packetsent_flow2.txt", std::ios::app);
+std::ofstream fileipaddress("ipaddress.txt", std::ios::app);
 
 static int GetIndexValue(double time) {
     int index = 2 * (static_cast<int> (time * 10) % 10);
@@ -175,18 +176,17 @@ static void CalculateAirTime1(double time, double rtt) {
     int index = GetIndexValue(packetSendTime);
     int packetsInQueue = queueStore1[index][1];
     double waitTime = packetsInQueue * TS_avg1;
-//    filewait << packetSendTime << "\t" << waitTime << std::endl;
+    //    filewait << packetSendTime << "\t" << waitTime << std::endl;
     double timeonair = rtt - waitTime;
     double airtime;
     //if (index != lastToAIndex1 && timeonair>0) // only changing the time on air value when using new queue value, considering all packets to have same time on air in 0.5 sec period (consider changing with counter)
-    if (toaCounter1==0 && timeonair>0)
-    {
-        ToA1 = (double)alpha * ToA1;
-        airtime = (double)(1-alpha)*timeonair;
-        ToA1 = ToA1 + airtime;      // Taking weighted average
+    if (toaCounter1 == 0 && timeonair > 0) {
+        ToA1 = (double) alpha * ToA1;
+        airtime = (double) (1 - alpha) * timeonair;
+        ToA1 = ToA1 + airtime; // Taking weighted average
         lastToAIndex1 = index;
     }
-    toaCounter1 = (toaCounter1+1)%20;      //log the value after every x acks
+    toaCounter1 = (toaCounter1 + 1) % 20; //log the value after every x acks
     filetoa1 << time << "\t" << ToA1 << std::endl;
 }
 
@@ -195,19 +195,18 @@ static void CalculateAirTime2(double time, double rtt) {
     int index = GetIndexValue(packetSendTime);
     int packetsInQueue = queueStore2[index][1];
     double waitTime = packetsInQueue * TS_avg2;
-//    filewait1 << packetSendTime << "\t" << waitTime << std::endl;
+    //    filewait1 << packetSendTime << "\t" << waitTime << std::endl;
     double timeonair = rtt - waitTime;
     double airtime;
     //if (index != lastToAIndex2  && timeonair>0) // only changing the time on air value when using new queue value, considering all packets to have same time on air in 0.5 sec period (consider changing with counter)
-    if (toaCounter2==0 && timeonair>0)
-    {
-        ToA2 = (double)alpha * ToA2;
-        airtime = (double)(1-alpha)*timeonair;
-        ToA2 = ToA2 + airtime;      // Taking weighted average
+    if (toaCounter2 == 0 && timeonair > 0) {
+        ToA2 = (double) alpha * ToA2;
+        airtime = (double) (1 - alpha) * timeonair;
+        ToA2 = ToA2 + airtime; // Taking weighted average
         lastToAIndex2 = index;
     }
-    toaCounter2 = (toaCounter2+1)%20;      //log the value after every x acks
-    filetoa2<<time<<"\t"<<ToA2<<std::endl;
+    toaCounter2 = (toaCounter2 + 1) % 20; //log the value after every x acks
+    filetoa2 << time << "\t" << ToA2 << std::endl;
 }
 
 static void CalculateSRttS1(Time newRtt, int SocketID) {
@@ -240,13 +239,13 @@ static void CalculateSRttS2(Time newRtt, int SocketID) {
 static void CalculateEServiceTimeRTR1() {
     //estServiceRTR1 = (float) (queueSizeRTR1 + 1) * SRttSocket1;
     estServiceRTR1 = (float) (queueSizeRTR1 + 1) * ToA1; // decouple srtt into wait time and time on air
-    fileeservice1<<Simulator::Now().GetSeconds()<< "\t" << estServiceRTR1 << std::endl;
+    fileeservice1 << Simulator::Now().GetSeconds() << "\t" << estServiceRTR1 << std::endl;
 }
 
 static void CalculateEServiceTimeRTR2() {
     //estServiceRTR2 = (float) (queueSizeRTR2 + 1) * SRttSocket2;
     estServiceRTR2 = (float) (queueSizeRTR2 + 1) * ToA2; //Time on Air as metric
-    fileeservice2<<Simulator::Now().GetSeconds()<< "\t" << estServiceRTR2 << std::endl;
+    fileeservice2 << Simulator::Now().GetSeconds() << "\t" << estServiceRTR2 << std::endl;
 }
 
 static void
@@ -301,9 +300,9 @@ static void ServiceTime1() {
     } else if (TS_obs1 > 0.005) { // Assuming that the packet has arrived in the queue after a gap; Change this value if you change last mile parameter
         num_dequeue1 = 1; //Take past average value as defacto and reset counter
     } else {
-//        if (num_dequeue1 > 100) {
-//            num_dequeue1 = 1;
-//        }
+        //        if (num_dequeue1 > 100) {
+        //            num_dequeue1 = 1;
+        //        }
         TS_sum = TS_avg1 * (double) (num_dequeue1);
         TS_sum = TS_sum + TS_obs1;
         TS_avg1 = TS_sum / (double) (++num_dequeue1);
@@ -319,9 +318,9 @@ static void ServiceTime2() {
     } else if (TS_obs2 > 0.005) { // Assuming that the packet has arrived in the queue after a gap; Change this value if you change last mile parameter
         num_dequeue2 = 1; //Take past average value as defacto and reset counter
     } else {
-//        if (num_dequeue2 > 100) {
-//            num_dequeue2 = 1;
-//        }
+        //        if (num_dequeue2 > 100) {
+        //            num_dequeue2 = 1;
+        //        }
         TS_sum = TS_avg2 * (double) (num_dequeue2);
         TS_sum = TS_sum + TS_obs2;
         TS_avg2 = TS_sum / (double) (++num_dequeue2);
@@ -343,20 +342,18 @@ static void DequeueTracer2(Ptr<const WifiMacQueueItem> dequeue) {
     dequeue_count2 = dequeue_count2 + 1;
     TS_obs2 = dequeue_time - dequeueold2;
     dequeueold2 = dequeue_time;
-    filedequeue << dequeue_time << "\t"<< dequeue_count1 << std::endl;
+    filedequeue << dequeue_time << "\t" << dequeue_count1 << std::endl;
     Simulator::ScheduleNow(&ServiceTime2);
 }
 
-static void EnqueueTracer1(Ptr<const WifiMacQueueItem> enqueue)
-{
+static void EnqueueTracer1(Ptr<const WifiMacQueueItem> enqueue) {
     double enqueue_time = Simulator::Now().GetSeconds();
-    fileenqueue1 << enqueue_time << "\t"<< ++enqueue_count1 << std::endl;
+    fileenqueue1 << enqueue_time << "\t" << ++enqueue_count1 << std::endl;
 }
 
-static void EnqueueTracer2(Ptr<const WifiMacQueueItem> enqueue)
-{
+static void EnqueueTracer2(Ptr<const WifiMacQueueItem> enqueue) {
     double enqueue_time1 = Simulator::Now().GetSeconds();
-    fileenqueue2 << enqueue_time1 << "\t"<< ++enqueue_count2 << std::endl;
+    fileenqueue2 << enqueue_time1 << "\t" << ++enqueue_count2 << std::endl;
 }
 
 static void CwndTracer1(Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd) {
@@ -379,7 +376,7 @@ static void CongWindowAvailabilityFlow1() {
     Config::ConnectWithoutContext("/NodeList/0/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow", MakeBoundCallback(&CwndTracer1, rttStream));
     Config::ConnectWithoutContext("/NodeList/0/$ns3::TcpL4Protocol/SocketList/0/BytesInFlight", MakeBoundCallback(&ByteinFlightTracer1, rttStream1));
 
-    if (cwnd1 - bif1 > (uint32_t)packetSize || cwnd1 == 0 || bif1 == 0) {
+    if (cwnd1 - bif1 > (uint32_t) packetSize || cwnd1 == 0 || bif1 == 0) {
         cwndAvailable1 = true;
     } else {
         cwndAvailable1 = false;
@@ -390,7 +387,7 @@ static void CongWindowAvailabilityFlow2() {
     Config::ConnectWithoutContext("/NodeList/0/$ns3::TcpL4Protocol/SocketList/1/CongestionWindow", MakeBoundCallback(&CwndTracer2, rttStream));
     Config::ConnectWithoutContext("/NodeList/0/$ns3::TcpL4Protocol/SocketList/1/BytesInFlight", MakeBoundCallback(&ByteinFlightTracer2, rttStream1));
 
-    if (cwnd2 - bif2 > (uint32_t)packetSize || cwnd2 == 0 || bif2 == 0) {
+    if (cwnd2 - bif2 > (uint32_t) packetSize || cwnd2 == 0 || bif2 == 0) {
         cwndAvailable2 = true;
     } else {
         cwndAvailable2 = false;
@@ -495,7 +492,7 @@ m_packetsSent(0),
 m_packetSent(false),
 m_packetSentOn(0),
 m_packetsFlow1(0),
-m_packetsFlow2(0){
+m_packetsFlow2(0) {
 }
 
 MyApp::~MyApp() {
@@ -520,7 +517,7 @@ MyApp::StartApplication(void) {
     m_packetsSent = 0;
     m_packetsFlow1 = 0;
     m_packetsFlow2 = 0;
-    
+
     m_socket1->Bind();
     m_socket1->Connect(InetSocketAddress(m_server, m_servPort));
 
@@ -558,66 +555,68 @@ MyApp::SendPacket(void) {
     //Ptr<Packet> packet = Create<Packet> ((uint8_t*) msg.str().c_str(), m_packetSize);
     Ptr<Packet> packet = Create<Packet> (m_packetSize);
 
-    if (((int) Simulator::Now().GetSeconds() > 1)) {
-        if ((cwndAvailable1 == true && cwndAvailable2 == true)) //|| (cwndAvailable1 == false && cwndAvailable2 == false)) //if both subflows are available; use scheduler to decide which flow/txbuffer to send data
-        {
-            ///===== SRTT-based scheduler=======////
-//                   if (SRttSocket1 <= SRttSocket2) {
-//                        m_socket1->Send(packet);
-//                        m_packetSentOn = 1;
-//                        m_packetsFlow1++;
-//                   } else {
-//                      m_socket2->Send(packet);
-//                      m_packetSentOn = 2;
-//                      m_packetsFlow2++;
-//                  }
-            ///====== Scheduler over ==========//////
-            //
-            //        ///===== Queue-based scheduler=======////
-            if (estServiceRTR1 <= estServiceRTR2) {
-                m_socket1->Send(packet);
-                m_packetSentOn = 1;
-                m_packetsFlow1++;
-            } else {
-                m_socket2->Send(packet);
-                m_packetSentOn = 2;
-                m_packetsFlow2++;   
-            }
-            //        ///====== Scheduler over ==========//////
-            m_packetSent = true;
-        } else if (cwndAvailable1 == true && cwndAvailable2 == false) {
-            m_socket1->Send(packet);
-            m_packetSent = true;
-            m_packetSentOn = 1;
-            m_packetsFlow1++;
-        } else if (cwndAvailable1 == false && cwndAvailable2 == true) {
-            m_socket2->Send(packet);
-            m_packetSent = true;
-            m_packetSentOn = 2;
-            m_packetsFlow2++;
-        }
-
-//            if(((int)Simulator::Now().GetSeconds() > 1) && (cwndAvailable2 == true)){
-////                filepacketsent<<Simulator::Now().GetSeconds()<< "\t" << m_packetsSent << std::endl;
+    //m_socket1->Send(packet);
+    m_socket2->Send(packet);
+//    if (((int) Simulator::Now().GetSeconds() > 1)) {
+//        if ((cwndAvailable1 == true && cwndAvailable2 == true)) //|| (cwndAvailable1 == false && cwndAvailable2 == false)) //if both subflows are available; use scheduler to decide which flow/txbuffer to send data
+//        {
+//            ///===== SRTT-based scheduler=======////
+//            //                   if (SRttSocket1 <= SRttSocket2) {
+//            //                        m_socket1->Send(packet);
+//            //                        m_packetSentOn = 1;
+//            //                        m_packetsFlow1++;
+//            //                   } else {
+//            //                      m_socket2->Send(packet);
+//            //                      m_packetSentOn = 2;
+//            //                      m_packetsFlow2++;
+//            //                  }
+//            ///====== Scheduler over ==========//////
+//            //
+//            //        ///===== Queue-based scheduler=======////
+//            if (estServiceRTR1 <= estServiceRTR2) {
+//                m_socket1->Send(packet);
+//                m_packetSentOn = 1;
+//                m_packetsFlow1++;
+//            } else {
 //                m_socket2->Send(packet);
 //                m_packetSentOn = 2;
-//                m_packetSent = true; 
+//                m_packetsFlow2++;
 //            }
+//            //        ///====== Scheduler over ==========//////
+//            m_packetSent = true;
+//        } else if (cwndAvailable1 == true && cwndAvailable2 == false) {
+//            m_socket1->Send(packet);
+//            m_packetSent = true;
+//            m_packetSentOn = 1;
+//            m_packetsFlow1++;
+//        } else if (cwndAvailable1 == false && cwndAvailable2 == true) {
+//            m_socket2->Send(packet);
+//            m_packetSent = true;
+//            m_packetSentOn = 2;
+//            m_packetsFlow2++;
+//        }
+//
+//        //            if(((int)Simulator::Now().GetSeconds() > 1) && (cwndAvailable2 == true)){
+//        ////                filepacketsent<<Simulator::Now().GetSeconds()<< "\t" << m_packetsSent << std::endl;
+//        //                m_socket2->Send(packet);
+//        //                m_packetSentOn = 2;
+//        //                m_packetSent = true; 
+//        //            }
+//
+//        if (m_packetSent == true) {
+//            ++m_packetsSent;
+//            if (m_packetSentOn == 1) {
+//                filepacketsent1 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow1 << "\t" << m_packetsSent << std::endl;
+//            } else {
+//                filepacketsent2 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow2 << "\t" << m_packetsSent << std::endl;
+//            }
+//        }
+//        //**Constant data flow part**//
+//    }
 
-        if (m_packetSent == true) {
-            ++m_packetsSent;
-            if (m_packetSentOn == 1) {
-                filepacketsent1 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow1 << "\t" << m_packetsSent << std::endl;
-            } else {
-                filepacketsent2 << Simulator::Now().GetSeconds() << "\t" << m_packetsFlow2 << "\t" << m_packetsSent << std::endl;
-            }
-        }
-        //**Constant data flow part**//
-    }
-    
-   //if (m_packetsSent < m_nPackets) {    //**Comment this check if you need to have constant flow of data**//
+    if (++m_packetsSent < m_nPackets) {    //**Comment this check if you need to have constant flow of data**//
     Simulator::ScheduleNow(&MyApp::ScheduleTx, this);
-  // }
+    }
 }
 
 void
@@ -664,7 +663,7 @@ main(int argc, char *argv[]) {
     // DefaultValue::Bind ()s at run-time, via command-line arguments
 
     ////******Choose topology for simulation. Choose only one of three******////
-    bool wifi_wifi = true; //Both Wifi interfaces
+    //bool wifi_wifi = true; //Both Wifi interfaces
     //bool wifi_lte = false;
     //    bool wifi_rxbufferbloat = true;
 
@@ -704,8 +703,8 @@ main(int argc, char *argv[]) {
     NetDeviceContainer dSrcdRtr2;
     NetDeviceContainer dRtr1dRtr3;
     NetDeviceContainer dRtr2dRtr4;
-    NetDeviceContainer dRtr3dDst;
-    NetDeviceContainer dRtr4dDst;
+    NetDeviceContainer dDstdRtr3;
+    NetDeviceContainer dDstdRtr4;
 
     PointToPointHelper p2p;
 
@@ -714,7 +713,7 @@ main(int argc, char *argv[]) {
 
     Ptr<NetDevice> SrcToRtr1;
     Ptr<NetDevice> SrcToRtr2;
-    
+
     Ptr<NetDevice> DstToRtr3;
     Ptr<NetDevice> DstToRtr4;
 
@@ -734,243 +733,224 @@ main(int argc, char *argv[]) {
 
     ///***AP Bufferbloat conditions over***//
 
-    if (wifi_wifi == true) {
-        // Point-to-point links
-        nSrcnRtr1 = NodeContainer(nSrc, nRtr1);
-        nSrcnRtr2 = NodeContainer(nSrc, nRtr2);
-        nRtr1nRtr3 = NodeContainer(nRtr1, nRtr3);
-        nRtr2nRtr4 = NodeContainer(nRtr2, nRtr4);
-        nRtr3nDst = NodeContainer(nRtr3, nDst);
-        nRtr4nDst = NodeContainer(nRtr4, nDst);
+    // Point-to-point links
+    nSrcnRtr1 = NodeContainer(nSrc, nRtr1);
+    nSrcnRtr2 = NodeContainer(nSrc, nRtr2);
+    nRtr1nRtr3 = NodeContainer(nRtr1, nRtr3);
+    nRtr2nRtr4 = NodeContainer(nRtr2, nRtr4);
+    nRtr3nDst = NodeContainer(nRtr3, nDst);
+    nRtr4nDst = NodeContainer(nRtr4, nDst);
 
-        //Wifi Links
-        NodeContainer staWifiNode = NodeContainer(nSrc); //nSRC from P2p link
-        NodeContainer apWifiNode = NodeContainer(nRtr1nRtr3.Get(0)); //nRtr1 from P2P link
+    //Wifi Links
+    NodeContainer staWifiNode = NodeContainer(nSrc); //nSRC from P2p link
+    NodeContainer apWifiNode = NodeContainer(nRtr1nRtr3.Get(0)); //nRtr1 from P2P link
 
-        NodeContainer sta1WifiNode = NodeContainer(nSrc); //nSRC from P2p link
-        NodeContainer ap1WifiNode = NodeContainer(nRtr2nRtr4.Get(0)); //nRtr1 from P2P link
-        
-        //DST side WiFi links 
-        NodeContainer dstWifiNode = NodeContainer(nDst); //nSRC from P2p link
-        NodeContainer apDstWifiNode = NodeContainer(nRtr1nRtr3.Get(1)); //nRtr1 from P2P link
+    NodeContainer sta1WifiNode = NodeContainer(nSrc); //nSRC from P2p link
+    NodeContainer ap1WifiNode = NodeContainer(nRtr2nRtr4.Get(0)); //nRtr1 from P2P link
 
-        NodeContainer dst1WifiNode = NodeContainer(nDst); //nSRC from P2p link
-        NodeContainer ap1DstWifiNode = NodeContainer(nRtr2nRtr4.Get(1)); //nRtr1 from P2P link
-        
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-        /////  SET WIFI CHANNELS /////
-        //!!!!!!!!!!!!!!!!!!!!!!!!!///
-        
-        //Create channel for wifi connection
-        channel = YansWifiChannelHelper::Default();
-        phy = YansWifiPhyHelper::Default();
-        //phy.SetChannel(channel.Create());
+    //DST side WiFi links 
+    NodeContainer dstWifiNode = NodeContainer(nDst); //nSRC from P2p link
+    NodeContainer apDstWifiNode = NodeContainer(nRtr1nRtr3.Get(1)); //nRtr1 from P2P link
 
-        WifiHelper wifiHelper;
-        wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
+    NodeContainer dst1WifiNode = NodeContainer(nDst); //nSRC from P2p link
+    NodeContainer ap1DstWifiNode = NodeContainer(nRtr2nRtr4.Get(1)); //nRtr1 from P2P link
 
-        NqosWifiMacHelper wifiMac;
-        //wifiHelper.SetStandard(WIFI_PHY_STANDARD_80211n_2_4GHZ);
-        
-        // Src WiFi set up
-        
-        phy.Set("ChannelNumber", UintegerValue(1));
-        phy.SetChannel(channel.Create());
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+    /////  SET WIFI CHANNELS /////
+    //!!!!!!!!!!!!!!!!!!!!!!!!!///
 
-        //        phy.Set ("RxNoiseFigure", DoubleValue (10));
-        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
+    //Create channel for wifi connection
+    channel = YansWifiChannelHelper::Default();
+    phy = YansWifiPhyHelper::Default();
+    //phy.SetChannel(channel.Create());
 
-        Ssid ssid = Ssid("network");
-        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
-        NetDeviceContainer dSrcdRtr1 = wifiHelper.Install(phy, wifiMac, staWifiNode);
+    WifiHelper wifiHelper;
+    wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
 
-        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
-        NetDeviceContainer apRtr1 = wifiHelper.Install(phy, wifiMac, apWifiNode);
+    NqosWifiMacHelper wifiMac;
+    //wifiHelper.SetStandard(WIFI_PHY_STANDARD_80211n_2_4GHZ);
 
-        phy.Set("ChannelNumber", UintegerValue(11));
-        phy.SetChannel(channel.Create());
+    // Src WiFi set up
 
-        //        phy.Set ("RxNoiseFigure", DoubleValue (40));
-        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
-        
-        wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
+    phy.Set("ChannelNumber", UintegerValue(1));
+    phy.SetChannel(channel.Create());
 
-        Ssid ssid1 = Ssid("network1");
-        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
-        NetDeviceContainer dSrcdRtr2 = wifiHelper.Install(phy, wifiMac, sta1WifiNode);
+    //        phy.Set ("RxNoiseFigure", DoubleValue (10));
+    //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
 
-        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
-        NetDeviceContainer apRtr2 = wifiHelper.Install(phy, wifiMac, ap1WifiNode);
+    Ssid ssid = Ssid("network");
+    wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
+    dSrcdRtr1 = wifiHelper.Install(phy, wifiMac, staWifiNode);
 
-        // Dst WiFi setup
-        
-        phy.Set("ChannelNumber", UintegerValue(4));
-        phy.SetChannel(channel.Create());
+    wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
+    NetDeviceContainer apRtr1 = wifiHelper.Install(phy, wifiMac, apWifiNode);
 
-        //        phy.Set ("RxNoiseFigure", DoubleValue (10));
-        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
+    phy.Set("ChannelNumber", UintegerValue(11));
+    phy.SetChannel(channel.Create());
 
-        Ssid ssid = Ssid("DstNetwork");
-        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
-        NetDeviceContainer dDstdRtr3 = wifiHelper.Install(phy, wifiMac, dstWifiNode);
+    //        phy.Set ("RxNoiseFigure", DoubleValue (40));
+    //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
 
-        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
-        NetDeviceContainer apRtr3 = wifiHelper.Install(phy, wifiMac, apDstWifiNode);
+    wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
 
-        phy.Set("ChannelNumber", UintegerValue(8));
-        phy.SetChannel(channel.Create());
+    Ssid ssid1 = Ssid("network1");
+    wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
+    dSrcdRtr2 = wifiHelper.Install(phy, wifiMac, sta1WifiNode);
 
-        //        phy.Set ("RxNoiseFigure", DoubleValue (40));
-        //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
-        
-        wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
+    wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
+    NetDeviceContainer apRtr2 = wifiHelper.Install(phy, wifiMac, ap1WifiNode);
 
-        Ssid ssid1 = Ssid("network1");
-        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
-        NetDeviceContainer dDstdRtr4 = wifiHelper.Install(phy, wifiMac, dst1WifiNode);
+    // Dst WiFi setup
 
-        wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
-        NetDeviceContainer apRtr4 = wifiHelper.Install(phy, wifiMac, ap1DstWifiNode);
+    phy.Set("ChannelNumber", UintegerValue(4));
+    phy.SetChannel(channel.Create());
 
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-        /////  SET P2P RTR Links  /////
-        //!!!!!!!!!!!!!!!!!!!!!!!!!///
-        
-        // We create the Point to point channels for connecting the two routers
-        //        p2p.SetDeviceAttribute("DataRate", StringValue("6Mbps")); // the wire transmission rate must be slower than application data rate for queueing to occur in QueueDisc
-        p2p.SetChannelAttribute("Delay", StringValue("1ms")); //Play with delays on both paths to throw off srtt scheduler
-        //dSrcdRtr2 = p2p.Install(nSrcnRtr2);
+    //        phy.Set ("RxNoiseFigure", DoubleValue (10));
+    //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
 
-        p2p.SetDeviceAttribute("DataRate", StringValue("100Mbps")); //Backbone link (30)
-        dRtr1dRtr3 = p2p.Install(nRtr1nRtr3);
-        dRtr2dRtr4 = p2p.Install(nRtr2nRtr4);
-        
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-        /////  GET NODE PTRS for WIFI   /////
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!///
-        
-        SrcToRtr1 = dSrcdRtr1.Get(0);
-        SrcToRtr2 = dSrcdRtr2.Get(0);
+    ssid = Ssid("DstNetwork");
+    wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
+    dDstdRtr3 = wifiHelper.Install(phy, wifiMac, dstWifiNode);
 
-        DstToRtr3 = dDstdRtr3.Get(0);
-        DstToRtr4 = dDstdRtr4.Get(0);
+    wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid), "QosSupported", BooleanValue(false));
+    NetDeviceContainer apRtr3 = wifiHelper.Install(phy, wifiMac, apDstWifiNode);
 
-        //******Uncomment this code to introduce errors on paths****// 
-//        int random_seed = rand() % 5 + 1;
-//        int random_seed1 = rand() % 5 + 1;
-//        double errorrate = random_seed * 0.00001;
-//        double errorrate2 = random_seed1 * 0.000015;
-//        //        //Adding errors on RTR1
-//                Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
-//                em->SetAttribute ("ErrorRate", DoubleValue (0.0001));
-//                dRtr1dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
-//        //
-//        //        //Adding errors on RTR2
-//                Ptr<RateErrorModel> em1 = CreateObject<RateErrorModel> ();
-//                em1->SetAttribute ("ErrorRate", DoubleValue (errorrate2));
-//                dRtr2dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em1));
-        //***Error inducing code is over***//
+    phy.Set("ChannelNumber", UintegerValue(8));
+    phy.SetChannel(channel.Create());
 
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-        /////  SET WIFI MOBILITY   /////
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!///
-        
-        MobilityHelper mobility;
-        mobility.SetPositionAllocator("ns3::GridPositionAllocator",
-                "MinX", DoubleValue(0.0),
-                "MinY", DoubleValue(0.0),
-                "DeltaX", DoubleValue(5.0),
-                "DeltaY", DoubleValue(10.0),
-                "GridWidth", UintegerValue(3),
-                "LayoutType", StringValue("RowFirst"));
+    //        phy.Set ("RxNoiseFigure", DoubleValue (40));
+    //        phy.Set ("CcaMode1Threshold", DoubleValue (-79));
 
-        mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-        mobility.Install(staWifiNode);
-        mobility.Install(apWifiNode);
+    wifiHelper.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate12Mbps"));
 
-        mobility.Install(sta1WifiNode);
-        mobility.Install(ap1WifiNode);
+    ssid1 = Ssid("network1");
+    wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
+    dDstdRtr4 = wifiHelper.Install(phy, wifiMac, dst1WifiNode);
 
-        mobility.Install(dstWifiNode);
-        mobility.Install(apDstWifiNode);
+    wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid1), "QosSupported", BooleanValue(false));
+    NetDeviceContainer apRtr4 = wifiHelper.Install(phy, wifiMac, ap1DstWifiNode);
 
-        mobility.Install(dst1WifiNode);
-        mobility.Install(ap1DstWifiNode);
-        
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-        /////  SET WIFI QUEUES   /////
-        //!!!!!!!!!!!!!!!!!!!!!!!!!///
-        
-        // Set WiFi Queues at source //
-        
-        Ptr<WifiNetDevice> wifiSrcToRTR1 = DynamicCast<WifiNetDevice> (SrcToRtr1); //Look into WifiMacQueue if you are using Wifi
-        PointerValue ptr;
-        wifiSrcToRTR1->GetAttribute("Mac", ptr);
-        Ptr<StaWifiMac> mac = ptr.Get<StaWifiMac>();
-        mac->GetAttribute("DcaTxop", ptr);
-        Ptr<DcaTxop> dca = ptr.Get<DcaTxop>();
-        Ptr<WifiMacQueue> qSrcToRTR1 = dca->GetQueue();
-        qSrcToRTR1->SetMaxPackets(1000);
-        qSrcToRTR1->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueRTR1));
-        //ByteQueue:
-        
-        //qSrcToRTR1->TraceConnectWithoutContext("BytesInQueue", MakeCallback(&DevicePacketsInQueueRTR1));
-        qSrcToRTR1->TraceConnectWithoutContext("Dequeue", MakeCallback(&DequeueTracer1));
-        qSrcToRTR1->TraceConnectWithoutContext("Enqueue", MakeCallback(&EnqueueTracer1));
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+    /////  SET P2P RTR Links  /////
+    //!!!!!!!!!!!!!!!!!!!!!!!!!///
 
-        Ptr<WifiNetDevice> wifiSrcToRTR2 = DynamicCast<WifiNetDevice> (SrcToRtr2); //Look into WifiMacQueue if you are using Wifi
-        PointerValue ptr1;
-        wifiSrcToRTR2->GetAttribute("Mac", ptr1);
-        Ptr<StaWifiMac> mac1 = ptr1.Get<StaWifiMac>();
-        mac1->GetAttribute("DcaTxop", ptr1);
-        Ptr<DcaTxop> dca1 = ptr1.Get<DcaTxop>();
-        Ptr<WifiMacQueue> qSrcToRTR2 = dca1->GetQueue();
-        qSrcToRTR2->SetMaxPackets(1000);
-        qSrcToRTR2->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueRTR2));
-        //ByteQueue:
-        //qSrcToRTR2->TraceConnectWithoutContext("BytesInQueue", MakeCallback(&DevicePacketsInQueueRTR2));
-        qSrcToRTR2->TraceConnectWithoutContext("Dequeue", MakeCallback(&DequeueTracer2));
-        qSrcToRTR2->TraceConnectWithoutContext("Enqueue", MakeCallback(&EnqueueTracer2));
+    // We create the Point to point channels for connecting the two routers
+    //        p2p.SetDeviceAttribute("DataRate", StringValue("6Mbps")); // the wire transmission rate must be slower than application data rate for queueing to occur in QueueDisc
+    p2p.SetChannelAttribute("Delay", StringValue("1ms")); //Play with delays on both paths to throw off srtt scheduler
+    //dSrcdRtr2 = p2p.Install(nSrcnRtr2);
 
-        //Set WiFi queues at Dest
-        
-        Ptr<WifiNetDevice> wifiDstToRTR3 = DynamicCast<WifiNetDevice> (DstToRtr3); //Look into WifiMacQueue if you are using Wifi
-        PointerValue ptr2;
-        wifiDstToRTR3->GetAttribute("Mac", ptr2);
-        Ptr<StaWifiMac> mac2 = ptr2.Get<StaWifiMac>();
-        mac2->GetAttribute("DcaTxop", ptr2);
-        Ptr<DcaTxop> dca2 = ptr2.Get<DcaTxop>();
-        Ptr<WifiMacQueue> qDstToRTR3 = dca2->GetQueue();
-        qDstToRTR3->SetMaxPackets(1000);
-        
-        Ptr<WifiNetDevice> wifiDstToRTR4 = DynamicCast<WifiNetDevice> (DstToRtr4); //Look into WifiMacQueue if you are using Wifi
-        PointerValue ptr3;
-        wifiDstToRTR4->GetAttribute("Mac", ptr3);
-        Ptr<StaWifiMac> mac3 = ptr3.Get<StaWifiMac>();
-        mac3->GetAttribute("DcaTxop", ptr3);
-        Ptr<DcaTxop> dca3 = ptr3.Get<DcaTxop>();
-        Ptr<WifiMacQueue> qDstToRTR4 = dca3->GetQueue();
-        qDstToRTR4->SetMaxPackets(1000);
-        
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-        /////  SET IP ADDRESSES   /////
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!///
-        
-        // Later, we add IP addresses.
-        ipv4.SetBase("10.1.1.0", "255.255.255.0");
-        Ipv4InterfaceContainer iSrcWifi;
-        iSrcWifi = ipv4.Assign(dSrcdRtr1);
-        Ipv4InterfaceContainer iRtr1Wifi;
-        iRtr1Wifi = ipv4.Assign(apRtr1);
+    p2p.SetDeviceAttribute("DataRate", StringValue("100Mbps")); //Backbone link (30)
+    dRtr1dRtr3 = p2p.Install(nRtr1nRtr3);
+    dRtr2dRtr4 = p2p.Install(nRtr2nRtr4);
 
-        ipv4.SetBase("10.1.2.0", "255.255.255.0");
-        Ipv4InterfaceContainer iSrcWifi1;
-        iSrcWifi1 = ipv4.Assign(dSrcdRtr2);
-        Ipv4InterfaceContainer iRtr2Wifi;
-        iRtr2Wifi = ipv4.Assign(apRtr2);
-    }
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+    /////  GET NODE PTRS for WIFI   /////
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!///
 
-    
+    SrcToRtr1 = dSrcdRtr1.Get(0);
+    SrcToRtr2 = dSrcdRtr2.Get(0);
+
+    DstToRtr3 = dDstdRtr3.Get(0);
+    DstToRtr4 = dDstdRtr4.Get(0);
+
+    //******Uncomment this code to introduce errors on paths****// 
+    //        int random_seed = rand() % 5 + 1;
+    //        int random_seed1 = rand() % 5 + 1;
+    //        double errorrate = random_seed * 0.00001;
+    //        double errorrate2 = random_seed1 * 0.000015;
+    //        //        //Adding errors on RTR1
+    //                Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
+    //                em->SetAttribute ("ErrorRate", DoubleValue (0.0001));
+    //                dRtr1dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
+    //        //
+    //        //        //Adding errors on RTR2
+    //                Ptr<RateErrorModel> em1 = CreateObject<RateErrorModel> ();
+    //                em1->SetAttribute ("ErrorRate", DoubleValue (errorrate2));
+    //                dRtr2dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em1));
+    //***Error inducing code is over***//
+
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+    /////  SET WIFI MOBILITY   /////
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!///
+
+    MobilityHelper mobility;
+    mobility.SetPositionAllocator("ns3::GridPositionAllocator",
+            "MinX", DoubleValue(0.0),
+            "MinY", DoubleValue(0.0),
+            "DeltaX", DoubleValue(5.0),
+            "DeltaY", DoubleValue(10.0),
+            "GridWidth", UintegerValue(3),
+            "LayoutType", StringValue("RowFirst"));
+
+    mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    mobility.Install(staWifiNode);
+    mobility.Install(apWifiNode);
+
+    mobility.Install(sta1WifiNode);
+    mobility.Install(ap1WifiNode);
+
+    mobility.Install(dstWifiNode);
+    mobility.Install(apDstWifiNode);
+
+    mobility.Install(dst1WifiNode);
+    mobility.Install(ap1DstWifiNode);
+
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+    /////  SET WIFI QUEUES   /////
+    //!!!!!!!!!!!!!!!!!!!!!!!!!///
+
+    // Set WiFi Queues at source //
+
+    Ptr<WifiNetDevice> wifiSrcToRTR1 = DynamicCast<WifiNetDevice> (SrcToRtr1); //Look into WifiMacQueue if you are using Wifi
+    PointerValue ptr;
+    wifiSrcToRTR1->GetAttribute("Mac", ptr);
+    Ptr<StaWifiMac> mac = ptr.Get<StaWifiMac>();
+    mac->GetAttribute("DcaTxop", ptr);
+    Ptr<DcaTxop> dca = ptr.Get<DcaTxop>();
+    Ptr<WifiMacQueue> qSrcToRTR1 = dca->GetQueue();
+    qSrcToRTR1->SetMaxPackets(1000);
+    qSrcToRTR1->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueRTR1));
+    //ByteQueue:
+
+    //qSrcToRTR1->TraceConnectWithoutContext("BytesInQueue", MakeCallback(&DevicePacketsInQueueRTR1));
+    qSrcToRTR1->TraceConnectWithoutContext("Dequeue", MakeCallback(&DequeueTracer1));
+    qSrcToRTR1->TraceConnectWithoutContext("Enqueue", MakeCallback(&EnqueueTracer1));
+
+    Ptr<WifiNetDevice> wifiSrcToRTR2 = DynamicCast<WifiNetDevice> (SrcToRtr2); //Look into WifiMacQueue if you are using Wifi
+    PointerValue ptr1;
+    wifiSrcToRTR2->GetAttribute("Mac", ptr1);
+    Ptr<StaWifiMac> mac1 = ptr1.Get<StaWifiMac>();
+    mac1->GetAttribute("DcaTxop", ptr1);
+    Ptr<DcaTxop> dca1 = ptr1.Get<DcaTxop>();
+    Ptr<WifiMacQueue> qSrcToRTR2 = dca1->GetQueue();
+    qSrcToRTR2->SetMaxPackets(1000);
+    qSrcToRTR2->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&DevicePacketsInQueueRTR2));
+    //ByteQueue:
+    //qSrcToRTR2->TraceConnectWithoutContext("BytesInQueue", MakeCallback(&DevicePacketsInQueueRTR2));
+    qSrcToRTR2->TraceConnectWithoutContext("Dequeue", MakeCallback(&DequeueTracer2));
+    qSrcToRTR2->TraceConnectWithoutContext("Enqueue", MakeCallback(&EnqueueTracer2));
+
+    //Set WiFi queues at Dest
+
+    Ptr<WifiNetDevice> wifiDstToRTR3 = DynamicCast<WifiNetDevice> (DstToRtr3); //Look into WifiMacQueue if you are using Wifi
+    PointerValue ptr2;
+    wifiDstToRTR3->GetAttribute("Mac", ptr2);
+    Ptr<StaWifiMac> mac2 = ptr2.Get<StaWifiMac>();
+    mac2->GetAttribute("DcaTxop", ptr2);
+    Ptr<DcaTxop> dca2 = ptr2.Get<DcaTxop>();
+    Ptr<WifiMacQueue> qDstToRTR3 = dca2->GetQueue();
+    qDstToRTR3->SetMaxPackets(1000);
+
+    Ptr<WifiNetDevice> wifiDstToRTR4 = DynamicCast<WifiNetDevice> (DstToRtr4); //Look into WifiMacQueue if you are using Wifi
+    PointerValue ptr3;
+    wifiDstToRTR4->GetAttribute("Mac", ptr3);
+    Ptr<StaWifiMac> mac3 = ptr3.Get<StaWifiMac>();
+    mac3->GetAttribute("DcaTxop", ptr3);
+    Ptr<DcaTxop> dca3 = ptr3.Get<DcaTxop>();
+    Ptr<WifiMacQueue> qDstToRTR4 = dca3->GetQueue();
+    qDstToRTR4->SetMaxPackets(1000);
+
+
     //    if(wifi_rxbufferbloat == true)
     //    {
     //            // Point-to-point links
@@ -1157,73 +1137,104 @@ main(int argc, char *argv[]) {
     //Ptr<QueueDisc> q2 = qdiscrtr2.Get(0);
     //q2->TraceConnectWithoutContext("PacketsInQueue", MakeCallback(&TcPacketsInQueue));
 
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+    /////  SET IP ADDRESSES   /////
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!///
+
+    // we add IP addresses for Source
+    ipv4.SetBase("10.1.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer iSrcWifi;
+    iSrcWifi = ipv4.Assign(dSrcdRtr1);
+    Ipv4InterfaceContainer iRtr1Wifi;
+    iRtr1Wifi = ipv4.Assign(apRtr1);
+
+    ipv4.SetBase("10.1.2.0", "255.255.255.0");
+    Ipv4InterfaceContainer iSrcWifi1;
+    iSrcWifi1 = ipv4.Assign(dSrcdRtr2);
+    Ipv4InterfaceContainer iRtr2Wifi;
+    iRtr2Wifi = ipv4.Assign(apRtr2);
+
+    // and here IP addresses for DST
+    ipv4.SetBase("10.2.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer iDstWifi;
+    iDstWifi = ipv4.Assign(dDstdRtr3);
+    Ipv4InterfaceContainer iRtr3Wifi;
+    iRtr3Wifi = ipv4.Assign(apRtr3);
+
+    ipv4.SetBase("10.2.2.0", "255.255.255.0");
+    Ipv4InterfaceContainer iDstWifi1;
+    iDstWifi1 = ipv4.Assign(dDstdRtr4);
+    Ipv4InterfaceContainer iRtr4Wifi;
+    iRtr4Wifi = ipv4.Assign(apRtr4);
+    
+    //Now IP addresses between the routers
     ipv4.SetBase("10.10.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer iRtr1iDstRtr = ipv4.Assign(dRtr1dDstRtr);
+    Ipv4InterfaceContainer iRtr1iRtr3 = ipv4.Assign(dRtr1dRtr3);
     ipv4.SetBase("10.10.2.0", "255.255.255.0");
-    Ipv4InterfaceContainer iRtr2iDstRtr = ipv4.Assign(dRtr2dDstRtr);
-    ipv4.SetBase("10.20.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer iDstRtrDst = ipv4.Assign(dDstRtrdDst);
+    Ipv4InterfaceContainer iRtr2iRtr4 = ipv4.Assign(dRtr2dRtr4);
 
     AnimationInterface anim("socket-bound-tcp-static-routing.xml");
 
     anim.SetConstantPosition(nDst, 25.0, 40.0); //DST node
-    anim.SetConstantPosition(nDstRtr, 25.0, 30.0); //DSTRtr node
+    anim.SetConstantPosition(nRtr3, 15.0, 30.0); //DSTRtr node
+    anim.SetConstantPosition(nRtr4, 35.0, 30.0); //DSTRtr node
     anim.SetConstantPosition(nRtr1, 15.0, 15.0); //RTR1 node
     anim.SetConstantPosition(nRtr2, 35.0, 15.0); //RTR2 node
     anim.SetConstantPosition(nSrc, 25.0, 2.0); //SRC node
     //anim.SetConstantPosition(nSrc1, 35.0, 2.0);
     anim.SetMaxPktsPerTraceFile(5000000000);
 
-    //Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
     Ptr<Ipv4> ipv4Src = nSrc->GetObject<Ipv4> ();
     Ptr<Ipv4> ipv4Rtr1 = nRtr1->GetObject<Ipv4> ();
     Ptr<Ipv4> ipv4Rtr2 = nRtr2->GetObject<Ipv4> ();
-    Ptr<Ipv4> ipv4DstRtr = nDstRtr->GetObject<Ipv4> ();
+    Ptr<Ipv4> ipv4Rtr3 = nRtr3->GetObject<Ipv4> ();
+    Ptr<Ipv4> ipv4Rtr4 = nRtr4->GetObject<Ipv4> ();
     Ptr<Ipv4> ipv4Dst = nDst->GetObject<Ipv4> ();
 
-    Ipv4StaticRoutingHelper ipv4RoutingHelper;
-    Ptr<Ipv4StaticRouting> staticRoutingSrc = ipv4RoutingHelper.GetStaticRouting(ipv4Src);
-    Ptr<Ipv4StaticRouting> staticRoutingRtr1 = ipv4RoutingHelper.GetStaticRouting(ipv4Rtr1);
-    Ptr<Ipv4StaticRouting> staticRoutingRtr2 = ipv4RoutingHelper.GetStaticRouting(ipv4Rtr2);
-    Ptr<Ipv4StaticRouting> staticRoutingDstRtr = ipv4RoutingHelper.GetStaticRouting(ipv4DstRtr);
-    Ptr<Ipv4StaticRouting> staticRoutingDst = ipv4RoutingHelper.GetStaticRouting(ipv4Dst);
-
-    //    Ptr<Ipv4> ipv4Src1 = nSrc1->GetObject<Ipv4> ();
-    //    Ptr<Ipv4StaticRouting> staticRoutingSrc1 = ipv4RoutingHelper.GetStaticRouting(ipv4Src1);
+    fileipaddress << "SRC 1 " << ipv4Src->GetAddress(1, 0).GetLocal () << " SRC 2 " << ipv4Src->GetAddress(2, 0).GetLocal () << std::endl;
+    fileipaddress << "DST 1 " << ipv4Dst->GetAddress(1, 0).GetLocal () << " SRC 2 " << ipv4Dst->GetAddress(2, 0).GetLocal () << std::endl;
+    fileipaddress << "RTR1 1 " << ipv4Rtr1->GetAddress(1, 0).GetLocal () << " RTR1 2 " << ipv4Rtr1->GetAddress(2, 0).GetLocal () << std::endl;
+    fileipaddress << "RTR2 1 " << ipv4Rtr2->GetAddress(1, 0).GetLocal () << " RTR2 2 " << ipv4Rtr2->GetAddress(2, 0).GetLocal () << std::endl;
+    fileipaddress << "RTR3 1 " << ipv4Rtr3->GetAddress(1, 0).GetLocal () << " RTR3 2 " << ipv4Rtr3->GetAddress(2, 0).GetLocal () << std::endl;
+    fileipaddress << "RTR4 1 " << ipv4Rtr4->GetAddress(1, 0).GetLocal () << " RTR4 2 " << ipv4Rtr4->GetAddress(2, 0).GetLocal () << std::endl;
+    
+//    Ipv4StaticRoutingHelper ipv4RoutingHelper;
+//    Ptr<Ipv4StaticRouting> staticRoutingSrc = ipv4RoutingHelper.GetStaticRouting(ipv4Src);
+//    Ptr<Ipv4StaticRouting> staticRoutingRtr1 = ipv4RoutingHelper.GetStaticRouting(ipv4Rtr1);
+//    Ptr<Ipv4StaticRouting> staticRoutingRtr2 = ipv4RoutingHelper.GetStaticRouting(ipv4Rtr2);
+//    Ptr<Ipv4StaticRouting> staticRoutingRtr3 = ipv4RoutingHelper.GetStaticRouting(ipv4Rtr3);
+//    Ptr<Ipv4StaticRouting> staticRoutingRtr4 = ipv4RoutingHelper.GetStaticRouting(ipv4Rtr4);
+//    Ptr<Ipv4StaticRouting> staticRoutingDst = ipv4RoutingHelper.GetStaticRouting(ipv4Dst);
 
     // Create static routes from Src to Dst
-    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.20.1.2"), Ipv4Address("10.10.1.2"), 2);
-    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.20.1.2"), Ipv4Address("10.10.2.2"), 2);
-
+//    staticRoutingSrc->AddHostRouteTo(Ipv4Address("10.2.1.1"), Ipv4Address("10.1.1.2"), 1, 5);
+//    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.2.1.1"), Ipv4Address("10.10.1.2"), 2);
+//    staticRoutingRtr3->AddHostRouteTo(Ipv4Address("10.2.1.1"), Ipv4Address("10.2.1.1"), 1);
+//    
     // Two routes to same destination - setting separate metrics. 
     // You can switch these to see how traffic gets diverted via different routes
-    staticRoutingSrc->AddHostRouteTo(Ipv4Address("10.20.1.2"), Ipv4Address("10.1.1.2"), 1, 5);
-    staticRoutingSrc->AddHostRouteTo(Ipv4Address("10.20.1.2"), Ipv4Address("10.1.2.2"), 2, 5);
+    
+//    staticRoutingSrc->AddHostRouteTo(Ipv4Address("10.2.2.1"), Ipv4Address("10.1.2.2"), 2, 5);
+//    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.2.2.1"), Ipv4Address("10.10.2.2"), 2);
+//    staticRoutingRtr4->AddHostRouteTo(Ipv4Address("10.2.2.1"), Ipv4Address("10.2.2.1"), 1);
 
     //Creating route from DST to SRC pointing via RTR1
-    staticRoutingDst->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.20.1.1"), 1);
-    staticRoutingDstRtr->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.10.1.1"), 1);
-    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.1.1.1"), 1);
-    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.1.1.1"), 1);
-
-
-    //    staticRoutingDst->AddHostRouteTo(Ipv4Address("10.1.1.3"), Ipv4Address("10.20.1.1"), 1);
-    //    staticRoutingDstRtr->AddHostRouteTo(Ipv4Address("10.1.1.3"), Ipv4Address("10.10.1.1"), 1);
-    //    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.1.1.3"), Ipv4Address("10.1.1.3"), 1);
-    //    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.1.2.3"), Ipv4Address("10.1.1.3"), 1);
+//    staticRoutingDst->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.2.1.1"), 1);
+//    staticRoutingRtr3->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.10.1.1"), 2);
+//    staticRoutingRtr3->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.10.1.1"), 2);
+//    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.1.1.1"), 1);
+//    staticRoutingRtr1->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.1.1.1"), 1);
 
     //Creating route from DST to SRC pointing via RTR2
-    staticRoutingDst->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.20.1.1"), 1);
-    staticRoutingDstRtr->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.10.2.1"), 2);
-    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.1.2.1"), 1);
-    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.1.2.1"), 1);
+//    staticRoutingDst->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.2.2.2"), 2);
+//    staticRoutingRtr4->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.10.2.1"), 2);
+//    staticRoutingRtr4->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.10.2.1"), 2);
+//    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.1.2.1"), Ipv4Address("10.1.2.1"), 1);
+//    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.1.1.1"), Ipv4Address("10.1.2.1"), 1);
 
-    //    staticRoutingDst->AddHostRouteTo(Ipv4Address("10.1.2.3"), Ipv4Address("10.20.1.1"), 1);
-    //    staticRoutingDstRtr->AddHostRouteTo(Ipv4Address("10.1.2.3"), Ipv4Address("10.10.2.1"), 2);
-    //    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.1.2.3"), Ipv4Address("10.1.2.3"), 1);
-    //    staticRoutingRtr2->AddHostRouteTo(Ipv4Address("10.1.1.3"), Ipv4Address("10.1.2.3"), 1);
-
+    
     //RxBufferbloat
     //    staticRoutingSrc1->AddHostRouteTo(Ipv4Address("10.20.1.2"), Ipv4Address("10.1.1.3"), 1, 5);
     //    staticRoutingSrc1->AddHostRouteTo(Ipv4Address("10.20.1.2"), Ipv4Address("10.1.2.3"), 2, 5);
@@ -1241,7 +1252,7 @@ main(int argc, char *argv[]) {
     //    Socket2->TraceConnectWithoutContext("CongestionWindow", MakeCallback (&CwndTracer2));
 
     uint16_t dstport = 12345;
-    Ipv4Address dstaddr("10.20.1.2");
+    Ipv4Address dstaddr("10.2.2.1");
 
     PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), dstport));
     ApplicationContainer apps = sink.Install(nDst);
@@ -1250,7 +1261,7 @@ main(int argc, char *argv[]) {
 
     // Create TCP application at n0
     Ptr<MyApp> app = CreateObject<MyApp> ();
-    app->Setup(Socket1, Socket2, dstaddr, dstport, packetSize, 200000, DataRate("18Mbps")); //original packet length: 1020
+    app->Setup(Socket1, Socket2, dstaddr, dstport, packetSize, 20, DataRate("18Mbps")); //original packet length: 1020
     c.Get(0)->AddApplication(app);
     app->SetStartTime(Seconds(1.0));
     app->SetStopTime(Seconds(10.0));
@@ -1266,14 +1277,12 @@ main(int argc, char *argv[]) {
 
     AsciiTraceHelper ascii;
     p2p.EnableAsciiAll(ascii.CreateFileStream("socket-bound-tcp-static-routing.tr"));
-    p2p.EnablePcapAll("socket-bound-tcp-static-routing");
+    //p2p.EnablePcapAll("socket-bound-tcp-static-routing");
 
     phy.EnableAsciiAll(ascii.CreateFileStream("wifi-trace.tr"));
 
-    if (wifi_wifi == true) {
-        phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-        phy.EnablePcapAll("socket-bound-tcp-static-routing-wifi");
-    }
+    phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
+    phy.EnablePcapAll("socket-bound-tcp-static-routing-wifi");
 
     LogComponentEnableAll(LOG_PREFIX_TIME);
     LogComponentEnable("SocketBoundTcpRoutingExample", LOG_LEVEL_INFO);
