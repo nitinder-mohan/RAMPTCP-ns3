@@ -61,6 +61,7 @@
 #include "src/wifi/helper/yans-wifi-helper.h"
 #include "ns3/wave-helper.h"
 #include "src/core/model/int64x64-128.h"
+#include "src/network/helper/net-device-container.h"
 
 
 using namespace ns3;
@@ -436,6 +437,15 @@ void LogValues() {
     fileQueueSize << Simulator::Now().GetSeconds() << "\t" << queueSizeRTR1 << "\t" << queueSizeRTR2 << "\t" << SRttSocket1 << "\t" << SRttSocket2 << "\t" << estServiceRTR1 << "\t" << estServiceRTR2 << std::endl;
 
     Simulator::Schedule(MilliSeconds(1), &LogValues);
+}
+
+static void setErrorRate(NetDeviceContainer netdev, double rate, int interface){
+        Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
+        em->SetAttribute ("ErrorRate", DoubleValue (rate));
+        //em->SetAttribute ("ErrorRate", DoubleValue (0.00001));
+        
+        netdev.Get(interface)->SetAttribute("ReceiveErrorModel", PointerValue(em));
+        //        dRtr1dDstRtr.Get(1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
 }
 
 //static void CheckQueueSize()
@@ -844,7 +854,7 @@ main(int argc, char *argv[]) {
 
     // We create the Point to point channels for connecting the two routers
     //        p2p.SetDeviceAttribute("DataRate", StringValue("6Mbps")); // the wire transmission rate must be slower than application data rate for queueing to occur in QueueDisc
-    p2p.SetChannelAttribute("Delay", StringValue("1ms")); //Play with delays on both paths to throw off srtt scheduler
+    p2p.SetChannelAttribute("Delay", StringValue("40ms")); //Play with delays on both paths to throw off srtt scheduler
     //dSrcdRtr2 = p2p.Install(nSrcnRtr2);
 
     p2p.SetDeviceAttribute("DataRate", StringValue("100Mbps")); //Backbone link (30)
@@ -1267,19 +1277,19 @@ main(int argc, char *argv[]) {
     PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), dstport));
     ApplicationContainer apps = sink.Install(nDst);
     apps.Start(Seconds(0.0));
-    apps.Stop(Seconds(10.0));
+    apps.Stop(Seconds(20.0));
     
     PacketSinkHelper sink1("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), dstport1));
     ApplicationContainer apps1 = sink1.Install(nDst);
     apps1.Start(Seconds(0.0));
-    apps1.Stop(Seconds(10.0));
+    apps1.Stop(Seconds(20.0));
 
     // Create TCP application at n0
     Ptr<MyApp> app = CreateObject<MyApp> ();
-    app->Setup(Socket1, Socket2, dstaddr, dstaddr1, dstport, dstport1, packetSize, 20000, DataRate("18Mbps")); //original packet length: 1020
+    app->Setup(Socket1, Socket2, dstaddr, dstaddr1, dstport, dstport1, packetSize, 200000, DataRate("10Mbps")); //original packet length: 1020
     c.Get(0)->AddApplication(app);
     app->SetStartTime(Seconds(1.0));
-    app->SetStopTime(Seconds(10.0));
+    app->SetStopTime(Seconds(20.0));
 
     //    Ptr<MyApp1> app1 = CreateObject<MyApp1> ();
     //    app1->Setup(Socket3, Socket4, dstaddr, dstport, 1040, 30000, DataRate("1Mbps"));
@@ -1292,12 +1302,12 @@ main(int argc, char *argv[]) {
 
     AsciiTraceHelper ascii;
     p2p.EnableAsciiAll(ascii.CreateFileStream("socket-bound-tcp-static-routing.tr"));
-    //p2p.EnablePcapAll("socket-bound-tcp-static-routing");
+    p2p.EnablePcapAll("socket-bound-tcp-static-routing");
 
     phy.EnableAsciiAll(ascii.CreateFileStream("wifi-trace.tr"));
 
-//    phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-//    phy.EnablePcapAll("socket-bound-tcp-static-routing-wifi");
+    phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
+    phy.EnablePcapAll("socket-bound-tcp-static-routing-wifi");
 
     LogComponentEnableAll(LOG_PREFIX_TIME);
     LogComponentEnable("SocketBoundTcpRoutingExample", LOG_LEVEL_INFO);
@@ -1314,12 +1324,16 @@ main(int argc, char *argv[]) {
     //    Simulator::Schedule(Seconds(0.0), &BindSock, Socket4, Src1ToRtr2);
 
     Simulator::Schedule(Seconds(0.0), &LogValues);
+    
+    Simulator::Schedule(Seconds(2.0), &setErrorRate, dRtr1dRtr3, 0.1, 1);
+    
+    Simulator::Schedule(Seconds(5.0), &setErrorRate, dRtr1dRtr3, 0, 1);
 
     FlowMonitorHelper flowmon;
     Ptr<FlowMonitor> monitor;
     monitor = flowmon.InstallAll();
 
-    Simulator::Stop(Seconds(15.0));
+    Simulator::Stop(Seconds(20.0));
     Simulator::Run();
 
     flowmon.SerializeToXmlFile("socket-bound.flowmon", true, true);
