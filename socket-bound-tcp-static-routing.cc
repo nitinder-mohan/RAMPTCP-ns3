@@ -579,15 +579,25 @@ MyApp::SendPacket(void) {
     if ((cwndAvailable1 == true && cwndAvailable2 == true)) //|| (cwndAvailable1 == false && cwndAvailable2 == false)) //if both subflows are available; use scheduler to decide which flow/txbuffer to send data
     {
         ///===== SRTT-based scheduler=======////
-        if (SRttSocket1 <= SRttSocket2) {
-            m_socket1->Send(packet);
-            m_packetSentOn = 1;
-            m_packetsFlow1++;
-        } else {
-            m_socket2->Send(packet);
-            m_packetSentOn = 2;
-            m_packetsFlow2++;
-        }
+        if(Simulator::Now().GetSeconds() >= 2 && Simulator::Now().GetSeconds() < 5 ) {//&& m_packetsSent%15 == 0)
+            if(m_packetsSent%5 == 0){    
+                m_socket1->Send(packet);
+                m_packetsFlow1++;
+            }else{
+                m_socket2->Send(packet);
+                m_packetsFlow2++;
+            }
+        }else{         
+                if (SRttSocket1 <= SRttSocket2) {
+                    //if(Simulator::Now().GetSeconds() <= 2 || Simulator::Now().GetSeconds() > 5 || m_packetsSent%10 == 0) {
+                        m_packetSentOn = 1;
+                        m_packetsFlow1++;
+                    //}
+                } else {
+                    m_socket2->Send(packet);
+                    m_packetSentOn = 2;
+                    m_packetsFlow2++;
+                }}
         ////====== Scheduler over ==========//////
         //
         //        ///===== Queue-based scheduler=======////
@@ -603,10 +613,12 @@ MyApp::SendPacket(void) {
         //        ///====== Scheduler over ==========//////
         m_packetSent = true;
     } else if (cwndAvailable1 == true && cwndAvailable2 == false) {
-        m_socket1->Send(packet);
-        m_packetSent = true;
-        m_packetSentOn = 1;
-        m_packetsFlow1++;
+        if(Simulator::Now().GetSeconds() < 2 && Simulator::Now().GetSeconds() > 5 ) {
+            m_socket1->Send(packet);
+            m_packetSent = true;
+            m_packetSentOn = 1;
+            m_packetsFlow1++;
+        }
     } else if (cwndAvailable1 == false && cwndAvailable2 == true) {
         m_socket2->Send(packet);
         m_packetSent = true;
